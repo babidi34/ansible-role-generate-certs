@@ -2,54 +2,51 @@
 
 # tasks file for cert_selfsigned 
 - name: Install requirement for generate cert_selfsigned
-
   block:
+    - name: install python3 and pip3
+      apt:
+        name: "{{item}}"
+        state: present
+      with_items:
+        - python3
+        - python3-pip
+      when: ansible_os_family == 'Debian'
 
-  - name: install python3 and pip3
-    apt:
-      name: "{{item}}"
-      state: present
-    with_items:
-    - python3
-    - python3-pip
-    when: ansible_os_family == 'Debian'
+    - name: pip install cryptography
+      pip:
+        name: cryptography
 
-  - name: pip install cryptography
-    pip:
-      name: cryptography
+- name: Generate CA self-signed certificate
+  block:
+    - name: Generate an OpenSSL private key for CA with default values (4096 bits, RSA)
+      openssl_privatekey:
+        path: "{{ tmp_dir }}/{{ cert_ca_key_name }}"
 
-- name: Generate self-signed certificate on localhost 
+    - name: Generate the CA CSR file signed with the private key
+      openssl_csr:
+        path: "{{ ssl_certs_dir }}/{{ cert_ca_req_name }}"
+        privatekey_path: "{{ tmp_dir }}/{{ cert_ca_key_name }}"
+        country_name: "{{ cert_country_name }}"
+        organization_name: "{{ cert_organization_name }}"
+        email_address: "{{ cert_email_address }}"
+        common_name: "{{ cert_ca_cname }}"
 
-  block: 
+    - name: Sign the CA CSR file to turn it into a self-signed certificate
+      openssl_certificate:
+        path: "{{ tmp_dir }}/{{ cert_ca_crt_name }}"
+        privatekey_path: "{{ tmp_dir }}/{{ cert_ca_key_name }}"
+        csr_path: "{{ ssl_certs_dir }}/{{ cert_ca_req_name }}"
+        provider: selfsigned
 
-  - name: Generate an OpenSSL private key with the default values (4096 bits, RSA) 
-    openssl_privatekey: 
-      path: "/tmp/{{ cert_pkey_name }}" 
-
-  - name: Generate the CSR file signed with the private key 
-    openssl_csr: 
-      path: "/tmp/{{ cert_req_name }}" 
-      privatekey_path: "/tmp/{{ cert_pkey_name }}" 
-      country_name: "{{ cert_country_name }}" 
-      organization_name: "{{ cert_organization_name }}" 
-      email_address: "{{ cert_email_address }}" 
-      common_name: "{{ cert_cname }}" 
-
-  - name: Sign the CSR file as a CA to turn it into a certificate 
-    openssl_certificate: 
-      path: "/tmp/{{ cert_crt_name }}" 
-      privatekey_path: "/tmp/{{ cert_pkey_name }}" 
-      csr_path: "/tmp/{{ cert_req_name }}" 
-      provider: selfsigned 
-
-
-  - name: Copy keys to the remote host 
-    copy: 
-      src: "{{ item.s }}" 
-      dest: "{{ item.d }}" 
-      mode: "{{ item.m }}" 
-      force: no
-      remote_src: yes
-    with_items: 
-    - { s: "/tmp/{{ cert_pkey_name }}", d: "/etc/ssl/private", m: '640' } 
-    - { s: "/tmp/{{ cert_crt_name }}", d: "/etc/ssl/certs", m: '644' } 
+    - name: Copy CA keys to the remote host
+      copy:
+        src: "{{ item.s }}"
+        dest: "{{ item.d }}"
+        owner: "{{ item.o }}"
+        group: "{{ item.g }}"
+        mode: "{{ item.m }}"
+        force: no
+        remote_src: yes
+      with_items:
+        - { s: "{{ tmp_dir }}/{{ cert_ca_key_name }}", d: "{{ ssl_private_key_dir }}", m: '640', o: "{{ ssl_private_key_owner }}", g: "{{ ssl_private_key_group }}" }
+        - { s: "{{ tmp_dir }}/{{ cert_ca_crt_name }}", d: "{{ ssl_certs_dir }}", m: '644', o: "{{ ssl_certs_owner }}", g: "{{ ssl_certs_group }}" }

@@ -1,21 +1,33 @@
 --- 
 
+- name: Include OS-specific variables.
+  include_vars: "RedHat-7.yml"
+  when: ansible_os_family == 'RedHat' and ansible_distribution_major_version == '7'
+
 # tasks file for cert_selfsigned 
 - name: Install requirement for generate cert_selfsigned
   block:
     - name: install python3 and pip3
-      apt:
-        name: "{{item}}"
+      package:
+        name:
+          - python3
+          - python3-pip
+          - openssl
         state: present
-        update_cache: true
-      with_items:
-        - python3
-        - python3-pip
-      when: ansible_os_family == 'Debian'
+        update_cache: true        
+
+    - name: Update pip and setuptools
+      pip:
+        name:
+          - pip
+        state: latest
+#      when: ansible_os_family == 'RedHat' and ansible_distribution_major_version == '7'
 
     - name: pip install cryptography
       pip:
-        name: cryptography
+        name: 
+          - cryptography
+          - pyOpenSSL
 
 - name: Create necessary SSL directories if they do not exist
   file:

@@ -1,7 +1,7 @@
 ---
 # defaults file for roles/generate-certs
 
-cert_cname: "{{ ansible_fqdn | lower }}" 
+cert_cname: "{{ ansible_hostname | lower }}" 
 cert_pkey_name: "{{ cert_cname }}.key" 
 cert_req_name: "{{ cert_cname }}.csr" 
 cert_crt_name: "{{ cert_cname }}.crt"

@@ -73,5 +73,5 @@
         force: no
         remote_src: yes
       with_items:
-        - { s: "{{ tmp_dir }}/{{ cert_ca_key_name }}", d: "{{ ssl_private_key_dir }}", m: '640', o: "{{ ssl_private_key_owner }}", g: "{{ ssl_private_key_group }}" }
+        - { s: "{{ tmp_dir }}/{{ cert_ca_key_name }}", d: "{{ ssl_private_key_dir }}", m: '600', o: "{{ ssl_private_key_owner }}", g: "{{ ssl_private_key_group }}" }
         - { s: "{{ tmp_dir }}/{{ cert_ca_crt_name }}", d: "{{ ssl_certs_dir }}", m: '644', o: "{{ ssl_certs_owner }}", g: "{{ ssl_certs_group }}" }
